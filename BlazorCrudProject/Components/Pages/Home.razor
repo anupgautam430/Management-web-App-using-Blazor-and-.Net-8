@@ -1,0 +1,76 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+@using System.Threading
+@using BlazorCrudProject.DataAccess.Services
+@using BlazorCrudProject.DataAccess.ViewModels
+
+@inject EmployeeService employeeService
+@rendermode InteractiveServer
+
+
+<MudDataGrid T="EmployeeViewModel" MultiSelection="true" Items="@Elements" SortMode="SortMode.Multiple" Filterable="true" QuickFilter="@_quickFilter"
+             Hideable="true" RowClick="@RowClicked" RowContextMenuClick="RowRightClicked">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Employee Details</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                      AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <Columns>
+        <SelectColumn T="EmployeeViewModel" />
+        <PropertyColumn Property="x => x.EmployeeId" Title="Employee Id" Sortable="false" Filterable="false" />
+        <PropertyColumn Property="x => x.FullName" SortBy="@_sortBy" />
+        <PropertyColumn Property="x => x.Department" />
+        <PropertyColumn Property="x => x.DateOfBirth" />
+        <PropertyColumn Property="x => x.Age" Title="Age" />
+        <PropertyColumn Property="x => x.PhoneNumber" Title="PhoneNumber" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="EmployeeViewModel" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private IEnumerable<EmployeeViewModel> Elements = new List<EmployeeViewModel>();
+    private string _searchString;
+    private bool _sortNameByLength;
+    private List<string> _events = new();
+    private Func<EmployeeViewModel, object> _sortBy => x =>
+    {
+        if (_sortNameByLength)
+            return x.FullName.Length;
+        else
+            return x.FullName;
+    };
+    private Func<EmployeeViewModel, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return true;
+
+        if (x.FullName.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Department.Contains(_searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Elements = await employeeService.GetAllEmployee();
+    }
+
+
+    void RowClicked(DataGridRowClickEventArgs<EmployeeViewModel> args)
+    {
+        _events.Insert(0, $"Event = RowClick, Index = {args.RowIndex}, Data = {System.Text.Json.JsonSerializer.Serialize(args.Item)}");
+    }
+
+    void RowRightClicked(DataGridRowClickEventArgs<EmployeeViewModel> args)
+    {
+        _events.Insert(0, $"Event = RowRightClick, Index = {args.RowIndex}, Data = {System.Text.Json.JsonSerializer.Serialize(args.Item)}");
+    }
+}
