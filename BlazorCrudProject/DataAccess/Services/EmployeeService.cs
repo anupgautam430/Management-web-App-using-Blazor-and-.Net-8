@@ -1,5 +1,7 @@
-﻿using BlazorCrudProject.DataAccess.ViewModels;
+﻿using BlazorCrudProject.DataAccess.Entities;
+using BlazorCrudProject.DataAccess.ViewModels;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace BlazorCrudProject.DataAccess.Services
 {
@@ -26,5 +28,30 @@ namespace BlazorCrudProject.DataAccess.Services
                     PhoneNumber = x.PhoneNumber,
                 }).ToListAsync();
         }
+
+        public bool CreateEmployee(EmployeeViewModel employee)
+        {
+            try
+            {
+                Employee employees = new Employee
+                {
+                    FullName = employee.FullName,
+                    Department = employee.Department,
+                    DateOfBirth = employee.DateOfBirth,
+                    Age = employee.Age,
+                    PhoneNumber = employee.PhoneNumber,
+                };
+
+                dbContext.Employees.Add( employees );
+                var result = dbContext.SaveChanges();
+
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
     }
 }

@@ -2,20 +2,34 @@
 
 <PageTitle>Home</PageTitle>
 
+<h2 class="text-center">
+    Employee Management System
+</h2>
+
 @using System.Threading
 @using BlazorCrudProject.DataAccess.Services
 @using BlazorCrudProject.DataAccess.ViewModels
 
 @inject EmployeeService employeeService
+@inject IDialogService DialogService
 @rendermode InteractiveServer
 
 
-<MudDataGrid T="EmployeeViewModel" MultiSelection="true" Items="@Elements" SortMode="SortMode.Multiple" Filterable="true" QuickFilter="@_quickFilter"
+<MudDataGrid @ref="dataGridRef" T="EmployeeViewModel" MultiSelection="true" Items="@Elements" SortMode="SortMode.Multiple" Filterable="true" QuickFilter="@_quickFilter"
              Hideable="true" RowClick="@RowClicked" RowContextMenuClick="RowRightClicked">
     <ToolBarContent>
-        <MudText Typo="Typo.h6">Employee Details</MudText>
-        <MudSpacer />
-        <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+         @* <MudText Typo="Typo.h6">Employee Details</MudText> *@
+
+         <MudButton Typo="Typo.h6" Class="me-2"
+                   @OnClick="CreateNewUser"
+                   StartIcon="@Icons.Material.Filled.PersonAddAlt1"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary">
+            Add New Employee
+        </MudButton> 
+
+         <MudSpacer />
+         <MudTextField @bind-Value="_searchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
     </ToolBarContent>
     <Columns>
@@ -33,6 +47,8 @@
 </MudDataGrid>
 
 @code {
+
+    private MudDataGrid<EmployeeViewModel> dataGridRef;
     private IEnumerable<EmployeeViewModel> Elements = new List<EmployeeViewModel>();
     private string _searchString;
     private bool _sortNameByLength;
@@ -73,4 +89,18 @@
     {
         _events.Insert(0, $"Event = RowRightClick, Index = {args.RowIndex}, Data = {System.Text.Json.JsonSerializer.Serialize(args.Item)}");
     }
+
+    public async Task CreateNewUser()
+    {
+        var option = new DialogOptions{MaxWidth = MaxWidth.Large};
+
+        var dialog = await DialogService.ShowAsync<CreateUpdateEmployee>("Add Employee", option);
+        var result = await dialog.Result;
+
+        if(result is not null && !result.Canceled)
+        {
+            await dataGridRef.ReloadServerData();
+        }
+    }
+
 }

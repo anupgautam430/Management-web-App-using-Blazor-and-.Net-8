@@ -1,0 +1,85 @@
+﻿
+@using BlazorCrudProject.DataAccess.Services
+@using BlazorCrudProject.DataAccess.ViewModels
+
+@inject EmployeeService EmployeeService
+@inject ISnackbar Snackbar
+
+<EditForm Model="@model" OnValidSubmit="OnValidSubmit">
+    <MudDialog>
+        <DialogContent>
+        <DialogAnnotationValidator />
+        <MudGrid>
+            <MudItem xs="9">
+                <MudTextField Variant="Variant.Outlined" 
+                ShrinkLabel
+                Label="Full Name"
+                @bind-Value="model.FullName" 
+                For="@(() => model.FullName)" />
+            </MudItem>
+            <MudItem xs="9">
+                <MudTextField Variant="Variant.Outlined"
+                ShrinkLabel
+                label="Age"
+                @bind-Value="model.Age"
+                For="@(() => model.Age)" />
+            </MudItem>
+        </MudGrid>
+
+        <MudDatePicker Variant="Variant.Outlined" Label="Date Of Birth" @bind-Date="_date" />
+
+                <MudTextField Variant="Variant.Outlined" 
+                ShrinkLabel
+                Label="Department"
+                @bind-Value="model.Department" 
+                For="@(() => model.Department)" />
+
+            <MudTextField Variant="Variant.Outlined"
+                          ShrinkLabel
+                          Label="PhoneNumber"
+                          @bind-Value="model.PhoneNumber"
+                          For="@(() => model.PhoneNumber)" />
+
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Create</MudButton>
+
+        </DialogActions>
+
+    </MudDialog>
+</EditForm>
+
+
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog{ get; set; }
+
+    public DateTime? _date { get; set; } = DateTime.Today;
+    public EmployeeViewModel model { get; set; } = new EmployeeViewModel();
+
+    private async Task OnValidSubmit(EditContext editContext)
+    {
+        if(_date is not null)
+        {
+            model.DateOfBirth = _date.Value;
+        }
+
+        var result = EmployeeService.CreateEmployee(model);
+        if(result)
+        {
+            Snackbar.Add("User Created Succesfully!", Severity.Success);
+            MudDialog.Close();
+        }
+        else
+        {
+            Snackbar.Add("Failed To Create the User!", Severity.Error);
+        }
+
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}
