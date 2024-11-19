@@ -1,6 +1,7 @@
 ﻿
 @using BlazorCrudProject.DataAccess.Services
 @using BlazorCrudProject.DataAccess.ViewModels
+@using BlazorCrudProject.Enum
 
 @inject EmployeeService EmployeeService
 @inject ISnackbar Snackbar
@@ -43,7 +44,7 @@
         </DialogContent>
         <DialogActions>
             <MudButton OnClick="Cancel">Cancel</MudButton>
-            <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Create</MudButton>
+            <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Save</MudButton>
 
         </DialogActions>
 
@@ -52,11 +53,17 @@
 
 
 @code {
+    [Parameter]
+    public UiActionEnum Action { get; set; } = UiActionEnum.Insert;
+
+    [Parameter]
+    public DateTime? _date { get; set; } = DateTime.Today;
+
+    [Parameter]
+    public EmployeeViewModel model { get; set; } = new EmployeeViewModel();
+
     [CascadingParameter]
     private MudDialogInstance MudDialog{ get; set; }
-
-    public DateTime? _date { get; set; } = DateTime.Today;
-    public EmployeeViewModel model { get; set; } = new EmployeeViewModel();
 
     private async Task OnValidSubmit(EditContext editContext)
     {
@@ -65,8 +72,22 @@
             model.DateOfBirth = _date.Value;
         }
 
+        if(Action == UiActionEnum.Insert)
+        {
+            CreateEmployee();
+        }
+        else if (Action == UiActionEnum.Update)
+        {
+            UpdateEmployee();
+        }
+
+
+    }
+
+    public void CreateEmployee()
+    {
         var result = EmployeeService.CreateEmployee(model);
-        if(result)
+        if (result)
         {
             Snackbar.Add("User Created Succesfully!", Severity.Success);
             MudDialog.Close();
@@ -75,7 +96,20 @@
         {
             Snackbar.Add("Failed To Create the User!", Severity.Error);
         }
+    }
 
+    public void UpdateEmployee()
+    {
+        var result = EmployeeService.UpdateEmployee(model);
+        if (result)
+        {
+            Snackbar.Add("User Updated Succesfully!", Severity.Success);
+            MudDialog.Close();
+        }
+        else
+        {
+            Snackbar.Add("Failed To update the User!", Severity.Error);
+        }
     }
 
     private void Cancel()
