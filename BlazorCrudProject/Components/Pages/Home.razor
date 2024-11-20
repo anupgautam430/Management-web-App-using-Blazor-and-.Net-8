@@ -10,10 +10,13 @@
 @using BlazorCrudProject.DataAccess.Services
 @using BlazorCrudProject.DataAccess.ViewModels
 @using BlazorCrudProject.Enum
+@using ClosedXML.Excel
 
 @inject EmployeeService employeeService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
 @rendermode InteractiveServer
 
 
@@ -21,6 +24,34 @@
              Hideable="true" RowClick="@RowClicked" RowContextMenuClick="RowRightClicked">
     <ToolBarContent>
          <MudText Typo="Typo.h6">Employee Details</MudText>
+         <MudFileUpload Class="me-2" T="IBrowserFile" @ref="excelUpload" Filterable="false">
+             <ActivatorContent>
+                 <MudButton Disabled="@importing" Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Custom.FileFormats.FileExcel">
+                    @if (importing)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indetermine="true"></MudProgressCircular>
+                        <MudText Class="ms-2">Processing..</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Import Excel</MudText>
+                    }
+                </MudButton>
+             </ActivatorContent>
+         </MudFileUpload>
+
+        <MudButton Disabled="@exporting" @onclick="ExportToExcel" Variant="Variant.Filled" Color="Color.Info" StartIcon="@Icons.Custom.FileFormats.FileExcel">
+            @if (exporting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indetermine="true"></MudProgressCircular>
+                <MudText Class="ms-2">Processing..</MudText>
+            }
+            else
+            {
+                <MudText>Export Excel</MudText>
+            }
+        </MudButton>
+
         <MudSpacer />
          <MudButton Typo="Typo.h6" Class="me-2"
                    @onclick="CreateNewUser"
@@ -73,6 +104,11 @@
 @code {
 
     private MudDataGrid<EmployeeViewModel> dataGridRef;
+    MudFileUpload<IBrowserFile> excelUpload;
+
+    bool importing = false;
+    bool exporting = false;
+
     private IEnumerable<EmployeeViewModel> Elements = new List<EmployeeViewModel>();
     private string _searchString;
     private bool _sortNameByLength;
@@ -195,6 +231,66 @@
                 }
             }
         }
+    }
+
+    private async Task UploadFile(IBrowserFile file)
+    {
+        if (file is null) return;
+        importing = true;
+        try
+        {
+            using var stream = new MemoryStream();
+            await file.OpenReadStream().CopyToAsync(stream);
+
+            stream.Position = 0;
+
+            using var workbook = new XLWorkbook(stream);
+            var worksheet = workbook.Worksheets.First();
+
+            var rows = worksheet.RowsUsed().Skip(1);
+
+            List<EmployeeViewModel> employees = new List<EmployeeViewModel>();
+            foreach(var row in rows)
+            {
+                EmployeeViewModel employeeViewModel = new EmployeeViewModel
+                    {
+                        FullName = row.Cell(1).Value.ToString(),
+                        Department = row.Cell(2).Value.ToString(),
+                        DateOfBirth = row.Cell(3).Value,
+                        Age = int.Parse(row.Cell(4).Value.ToString()),
+                        PhoneNumber = int.Parse(row.Cell(5).Value.ToString()),
+                    };
+                employees.Add(employeeViewModel);
+            }
+
+            var parameters = new DialogParameters<ImportDialog>
+            {
+                { x=> x.employees, employees}
+            };
+            var options = new DialogOptions() {MaxWidth = MaxWidth.Large};
+
+            var dialog = await DialogService.ShowAsync<ImportDialog>("Ready to Import", parameters, options);
+            var result = await dialog.Result;
+
+            if (result is not null && !result.Canceled)
+            {
+                if (dataGridRef != null)
+                    await dataGridRef.ReloadServerData();
+            }
+        }
+        catch(Exception ex)
+        {
+        }
+        await excelUpload.ClearAsync();
+        importing = false;
+    }
+
+    private async Task ExportToExcel()
+    {
+        exporting = true;
+        var excelBytes = await employeeService.ExportToExcel();
+        await JS.InvokeVoidAsync("downloadFileFromBytes", "List employee.xlsx", excelBytes);
+        exporting = false;
     }
 
 }

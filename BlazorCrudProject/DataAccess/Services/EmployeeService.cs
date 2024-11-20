@@ -1,5 +1,6 @@
 ﻿using BlazorCrudProject.DataAccess.Entities;
 using BlazorCrudProject.DataAccess.ViewModels;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -108,6 +109,65 @@ namespace BlazorCrudProject.DataAccess.Services
             catch (Exception ex)
             {
                 return false;
+            }
+        }
+
+        public async Task<bool> ImportEmployee(List<EmployeeViewModel>employees)
+        {
+            try
+            {
+                List<Employee> toDb = new List<Employee>();
+                foreach (var employee in employees)
+                {
+                    Employee employee1 = new Employee
+                    {
+                        FullName = employee.FullName,
+                        Department = employee.Department,
+                        DateOfBirth = employee.DateOfBirth,
+                        Age = employee.Age,
+                        PhoneNumber = employee.PhoneNumber,
+                    };
+                    toDb.Add(employee1);
+                }
+                await dbContext.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+
+        }
+
+        public async Task<Byte[]> ExportToExcel()
+        {
+            var datas = await GetAllEmployee();
+
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("Employee");
+
+                worksheet.Cell(1, 1).Value = "Employee Id";
+                worksheet.Cell(2, 1).Value = "Full Name";
+                worksheet.Cell(1, 3).Value = "Department";
+                worksheet.Cell(1, 4).Value = "Date Of Birth";
+                worksheet.Cell(1, 5).Value = "Age";
+                worksheet.Cell(1, 6).Value = "Phone Number";
+
+                for (int i = 0; i < datas.Count; i++)
+                {
+                    worksheet.Cell(i + 2, 1).Value = datas[i].EmployeeIdView;
+                    worksheet.Cell(i + 2, 2).Value = datas[i].FullName;
+                    worksheet.Cell(i + 2, 3).Value = datas[i].Department;
+                    worksheet.Cell(i + 2, 4).Value = datas[i].DateOfBirth;
+                    worksheet.Cell(i + 2, 5).Value = datas[i].Age;
+                    worksheet.Cell(i + 2, 6).Value = datas[i].PhoneNumber;
+                }
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    return stream.ToArray();
+                }
             }
         }
     }
