@@ -112,23 +112,20 @@ namespace BlazorCrudProject.DataAccess.Services
             }
         }
 
-        public async Task<bool> ImportEmployee(List<EmployeeViewModel>employees)
+        public async Task<bool> ImportEmployee(List<EmployeeViewModel> employees)
         {
             try
             {
-                List<Employee> toDb = new List<Employee>();
-                foreach (var employee in employees)
+                List<Employee> toDb = employees.Select(employee => new Employee
                 {
-                    Employee employee1 = new Employee
-                    {
-                        FullName = employee.FullName,
-                        Department = employee.Department,
-                        DateOfBirth = employee.DateOfBirth,
-                        Age = employee.Age,
-                        PhoneNumber = employee.PhoneNumber,
-                    };
-                    toDb.Add(employee1);
-                }
+                    FullName = employee.FullName,
+                    Department = employee.Department,
+                    DateOfBirth = employee.DateOfBirth,
+                    Age = employee.Age,
+                    PhoneNumber = employee.PhoneNumber,
+                }).ToList();
+
+                dbContext.Employees.AddRange(toDb);
                 await dbContext.SaveChangesAsync();
                 return true;
             }
@@ -136,7 +133,6 @@ namespace BlazorCrudProject.DataAccess.Services
             {
                 return false;
             }
-
         }
 
         public async Task<Byte[]> ExportToExcel()
@@ -148,7 +144,7 @@ namespace BlazorCrudProject.DataAccess.Services
                 var worksheet = workbook.Worksheets.Add("Employee");
 
                 worksheet.Cell(1, 1).Value = "Employee Id";
-                worksheet.Cell(2, 1).Value = "Full Name";
+                worksheet.Cell(1, 2).Value = "Full Name";
                 worksheet.Cell(1, 3).Value = "Department";
                 worksheet.Cell(1, 4).Value = "Date Of Birth";
                 worksheet.Cell(1, 5).Value = "Age";
@@ -156,10 +152,10 @@ namespace BlazorCrudProject.DataAccess.Services
 
                 for (int i = 0; i < datas.Count; i++)
                 {
-                    worksheet.Cell(i + 2, 1).Value = datas[i].EmployeeIdView;
+                    worksheet.Cell(i + 2, 1).Value = datas[i].EmployeeId;
                     worksheet.Cell(i + 2, 2).Value = datas[i].FullName;
                     worksheet.Cell(i + 2, 3).Value = datas[i].Department;
-                    worksheet.Cell(i + 2, 4).Value = datas[i].DateOfBirth;
+                    worksheet.Cell(i + 2, 4).Value = datas[i].DateOfBirth.ToString("yyyy-MM-dd");
                     worksheet.Cell(i + 2, 5).Value = datas[i].Age;
                     worksheet.Cell(i + 2, 6).Value = datas[i].PhoneNumber;
                 }
