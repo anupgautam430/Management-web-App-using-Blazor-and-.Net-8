@@ -280,6 +280,7 @@
         }
         catch(Exception ex)
         {
+            Console.WriteLine(ex.Message);
         }
         await excelUpload.ClearAsync();
         importing = false;
@@ -288,8 +289,9 @@
     private async Task ExportToExcel()
     {
         exporting = true;
-        var excelBytes = await employeeService.ExportToExcel();
-        await JS.InvokeVoidAsync("downloadFileFromBytes", "List employee.xlsx", excelBytes);
+        var fileContent = await employeeService.ExportToExcel();
+        string fileName = "EmployeeData.xlsx";
+        await JS.InvokeVoidAsync("downloadFileFromBytes", fileContent, fileName);
         exporting = false;
     }
 

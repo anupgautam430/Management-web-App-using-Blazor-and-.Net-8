@@ -19,12 +19,14 @@
     <script src="_framework/blazor.web.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script>
-        function downloadFileFromBytes(fileName, byteArray){
-            var blob = new Blob([new Uint8Array(byteArray)], { type: 'application/vnd.openxmlformat-officedocument.spreadsheetml.sheet' });
-            var link = document.createElement('a');
-            link.href = window.URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
+        function downloadFileFromBytes(fileContent, fileName) {
+            const blob = new Blob([fileContent], { type: "application/octet-stream" });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = fileName || "download.xlsx";
+            anchor.click();
+            window.URL.revokeObjectURL(url);
         }
     </script>
 </body>
